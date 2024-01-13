@@ -1,0 +1,50 @@
+Sys.setlocale("LC_ALL", 'Japanese_Japan.932')
+
+setwd("D:/dataset")
+getwd()
+list.files()
+
+library(readxl)
+library(dplyr)
+library(lubridate)
+uri = read_excel("uriage_tran.xlsx")
+yoy = read_excel("yoyaku_tran.xlsx")
+sho = read_excel("shohin_master.xlsx")
+kok = read.csv("kokyaku_master.csv")
+# bind in row
+df = rbind(uri,yoy)
+head(df)
+sum(!complete.cases(df))
+# input mean price of clothes to nan
+colSums(is.na(sho))
+sho[!complete.cases(sho$price),]
+m <- mean(sho[sho$item_category=='衣料品',]$price,na.rm=TRUE)
+sho[!complete.cases(sho$price),"price"] <- m
+#attach price columns in df
+df <- left_join(df,sho,by=c('item_id','item_nm'))
+kok1 <- kok[,c(1,6)]
+str(kok1)
+df1 <- left_join(df,kok1,by='user_id')
+str(df1)
+# category to factor
+df1$item_category <- as.factor(df1$item_category)
+plot(df1$user_category)
+#add uriage columns
+df1['uriage'] = df1$price * df1$item_cnt
+df1['month'] = month(df1$date)
+df1['day'] = weekdays(df1$date)
+library(dplyr)
+library(ggplot2)
+head(df1)
+df1%>%ggplot(aes(month,uriage)) + geom_col(aes(col=item_category))
+df1%>%ggplot(aes(month,uriage)) + geom_col(aes(col=day))
+df1%>%ggplot(aes(day,uriage)) + geom_col(aes(col=item_category))
+df1%>%ggplot(aes(item_category,uriage)) + geom_col(aes(col = user_category))       
+
+summary(df1$item_category)
+clothing <- df1[df1$item_category=='衣料品',]
+food <- df1[df1$item_category=='食品',]
+entertain <- df1[df1$item_category=='娯楽',]
+cloth <- df1[df1$item_category=='衣料・小物',]
+medicine <- df1[df1$item_category=='医薬品',]
+furniture <-df1[df1$item_category=='家財',]
