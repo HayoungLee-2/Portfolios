@@ -1,0 +1,83 @@
+getwd()
+setwd("D:/dataset")
+list.files()
+
+df <- read.csv('finance.csv')
+
+str(df)
+attach(df)
+nrow(df)
+df$TOSAN_FLG <- as.factor(df$TOSAN_FLG)
+#cleansing
+table(!complete.cases(df))
+df <- df[complete.cases(df),]
+df <- df[!apply(df[,-2] == 0, 1, FUN = any, na.rm = TRUE),]
+
+
+library(mice)
+md.pattern(df,rotate.names=TRUE)
+
+plot(df$URIAGE_KINYU_SHUSHI_RITU)
+plot(df$SO_SHIHON_KIGYO_SHUEKI_RITU)
+
+
+library(dplyr)
+write.csv(df, file="df.csv",quote=FALSE,row.names = FALSE)
+boxplot(df$SHIHON_KIN)$stats
+df1 <- filter(df,SHIHON_KIN<=1000000)
+
+## 多重共線性
+library(corrplot)
+cols <- cor(df1[,c(-1,-2)])
+library(Hmisc)
+res2<-rcorr(as.matrix(cols))
+res2
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+cor_mat <- flattenCorrMatrix(res2$r, res2$P)
+
+write.csv(cor_mat, file="cormat.csv",quote=FALSE,row.names = FALSE)
+
+df1['JIKOSHIHON_RITU']<- round(df1$JIKO_SHIHON/df1$SHIHON_KIN*100,2)
+new_output <- subset(df1,select=c(URIAGE_EIGYO_GAI_HIYO_RITU,
+                                  URIAGE_TOKI_RIEKI_RITU,
+                                  SO_SHIHON_KAITEN_KIKAN,
+                                  KOTEI_SHISAN_KAITEN_KIKAN,
+                                  JIKOSHIHON_RITU,
+                                  YUKEI_KOTEI_SHISAN_KAITEN_KIKAN,
+                                  SHOHIN_KAITEN_KIKAN,
+                                  TOSAN_FLG,
+                                  URIAGE_GENKA_RITU,
+                                  URIAGE_HANKANHI_RITU,
+                                  URIAGE_EIGYO_GAI_SHUEKI_RITU,
+                                  SHIHON_KIN_BAI_RITU,
+                                  URIKAKE_KAITEN_KIKAN,
+                                  KAIIRE_SAIMU_KAITEN_KIKAN,
+                                  KAIKAKE_KAITEN_KIKAN,
+                                  GEN_YOKIN_TEMOCHI_NISSU))
+head(new_output)
+#정규화
+
+new_output$URIAGE_EIGYO_GAI_HIYO_RITU <- scale(log(new_output$URIAGE_EIGYO_GAI_HIYO_RITU))
+new_output$URIAGE_TOKI_RIEKI_RITU <- scale(new_output$URIAGE_TOKI_RIEKI_RITU)
+new_output$SO_SHIHON_KAITEN_KIKAN <- scale(log(new_output$SO_SHIHON_KAITEN_KIKAN))
+new_output$KOTEI_SHISAN_KAITEN_KIKAN <- scale(log(new_output$KOTEI_SHISAN_KAITEN_KIKAN))
+new_output$JIKOSHIHON_RITU <- scale(new_output$JIKOSHIHON_RITU)
+new_output$YUKEI_KOTEI_SHISAN_KAITEN_KIKAN <- scale(log(new_output$YUKEI_KOTEI_SHISAN_KAITEN_KIKAN))
+new_output$SHOHIN_KAITEN_KIKAN <- scale(log(new_output$SHOHIN_KAITEN_KIKAN))
+new_output$URIAGE_GENKA_RITU <- scale(log(new_output$URIAGE_GENKA_RITU))
+new_output$URIAGE_HANKANHI_RITU <- scale(log(new_output$URIAGE_HANKANHI_RITU))
+new_output$URIAGE_EIGYO_GAI_SHUEKI_RITU <- scale(log(new_output$URIAGE_EIGYO_GAI_SHUEKI_RITU))
+new_output$SHIHON_KIN_BAI_RITU <- scale(new_output$SHIHON_KIN_BAI_RITU)
+new_output$URIKAKE_KAITEN_KIKAN <- scale(log(new_output$URIKAKE_KAITEN_KIKAN))
+new_output$KAIIRE_SAIMU_KAITEN_KIKAN <- scale(log(new_output$KAIIRE_SAIMU_KAITEN_KIKAN))
+new_output$KAIKAKE_KAITEN_KIKAN <- scale(log(new_output$KAIKAKE_KAITEN_KIKAN))
+new_output$GEN_YOKIN_TEMOCHI_NISSU <- scale(log(new_output$GEN_YOKIN_TEMOCHI_NISSU))
+
